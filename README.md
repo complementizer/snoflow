@@ -29,14 +29,16 @@ npm run dev                   # http://localhost:5173, set to Custom Backend mod
 
 The backend supports OpenAI, Azure OpenAI, and Anthropic. See `.env.example` for all options.
 
-## Resolver modes
+## Entity Linking Backend Modes
 
-The frontend has two resolver modes, selected at setup:
+The frontend has two backend modes, selected at setup:
 
 | Mode | Entity extraction | Concept grounding | What you need |
 |---|---|---|---|
-| **LLM + Snowstorm** (default) | Browser-side LLM | Snowstorm public API | API key |
-| **Custom Backend** | Python backend | Python backend + Snowstorm | Backend running |
+| **LLM + Snowstorm** (default) | LLM endpoints served via simple Python backend | Snowstorm API for concept retrieval | API key |
+| **Custom Backend** | Your own entity linking service | Your own service | Backend running |
+
+For a custom backend example, see [snomed-ct-entity-linking-project](https://github.com/PROVIA1/snomed-ct-entity-linking-project).
 
 The resolver interface is in `src/resolvers/types.ts`.
 
