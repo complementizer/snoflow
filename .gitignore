@@ -7,3 +7,4 @@ dist
 __pycache__
 *.pyc
 snowstorm_cache.json
+.vscode/
