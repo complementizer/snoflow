@@ -258,9 +258,9 @@ export function MentionPanel({
   const isUnsure = annotation === UNSURE;
   const confirmedConceptId = (isNoneMatch || isUnsure) ? null : (annotation || null);
 
-  const isPendingNoneMatch = pendingSelection === NONE_MATCH && !isNoneMatch;
+  const isPendingNoneMatch = pendingSelection === NONE_MATCH;
   const isPendingDelete = pendingSelection === PENDING_DELETE;
-  const isPendingUnsure = pendingSelection === UNSURE && !isUnsure;
+  const isPendingUnsure = pendingSelection === UNSURE;
 
   const handleConfirm = () => {
     if (!pendingSelection) return;
@@ -477,7 +477,7 @@ export function MentionPanel({
                     candidate={candidate}
                     isConfirmed={candidate.conceptId === confirmedConceptId}
                     isHighlighted={idx === highlightedIndex}
-                    isPending={pendingSelection === candidate.conceptId && annotation !== candidate.conceptId}
+                    isPending={pendingSelection === candidate.conceptId}
                     onSelect={() => setPendingSelection(candidate.conceptId)}
                     onConfirm={handleConfirm}
                     onViewHierarchy={() => handleViewHierarchy(candidate.conceptId)}
