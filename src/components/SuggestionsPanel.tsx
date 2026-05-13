@@ -1,6 +1,6 @@
 import { AlertTriangle, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
-import { LinkedEntity, NOT_LINKED, getSuggestions, getMatchScoreLevel, isUncertain, ExplanationVerdict } from '../types';
+import { LinkedEntity, NOT_LINKED, getSuggestions, isUncertain, ExplanationVerdict } from '../types';
 
 interface SuggestionsPanelProps {
   entities: LinkedEntity[];
@@ -11,13 +11,40 @@ interface SuggestionsPanelProps {
   certaintyMap: Record<string, ExplanationVerdict>;
 }
 
-function SuggestionIcon({ type }: { type: 'uncertain' | 'low_match' | 'close_scores' }) {
-  switch (type) {
-    case 'uncertain': return <AlertTriangle className="w-4 h-4 text-amber-500" />;
-    case 'low_match': return <AlertCircle className="w-4 h-4 text-rose-500" />;
-    case 'close_scores': return <AlertTriangle className="w-4 h-4 text-orange-500" />;
+type AttentionCategory = 'no_match' | 'uncertain' | 'low_match' | 'close_scores';
+
+function getAttentionCategory(verdict: ExplanationVerdict | undefined, suggestions: ReturnType<typeof getSuggestions>): AttentionCategory {
+  if (verdict === 'no_match') return 'no_match';
+  if (verdict === 'ambiguous' || verdict === 'uncertain') return 'uncertain';
+  const type = suggestions[0]?.type;
+  if (type === 'low_match' || type === 'close_scores') return type;
+  return 'uncertain';
+}
+
+function AttentionIcon({ category, className = 'w-4 h-4' }: { category: AttentionCategory; className?: string }) {
+  switch (category) {
+    case 'no_match': return <AlertCircle className={`${className} text-violet-500`} />;
+    case 'uncertain': return <AlertTriangle className={`${className} text-rose-500`} />;
+    case 'low_match': return <AlertCircle className={`${className} text-rose-500`} />;
+    case 'close_scores': return <AlertTriangle className={`${className} text-amber-500`} />;
   }
 }
+
+const categoryBadge: Record<AttentionCategory, { bg: string; text: string; border: string; label: string }> = {
+  no_match: { bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200', label: 'no match' },
+  uncertain: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', label: 'uncertain' },
+  low_match: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', label: 'low match' },
+  close_scores: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'close scores' },
+};
+
+const categoryOrder: AttentionCategory[] = ['no_match', 'uncertain', 'low_match', 'close_scores'];
+
+const fallbackMessages: Record<AttentionCategory, string> = {
+  no_match: 'No candidate matches this mention',
+  uncertain: 'Ambiguous or uncertain match',
+  low_match: 'Low match score',
+  close_scores: 'Close candidate scores',
+};
 
 export function SuggestionsPanel({ entities, annotations, confirmed, onEntityClick, getEntityKey, certaintyMap }: SuggestionsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -25,6 +52,7 @@ export function SuggestionsPanel({ entities, annotations, confirmed, onEntityCli
   const entitiesWithIssues: Array<{
     entity: LinkedEntity; key: string;
     suggestions: ReturnType<typeof getSuggestions>;
+    category: AttentionCategory;
   }> = [];
 
   entities.forEach(entity => {
@@ -32,7 +60,7 @@ export function SuggestionsPanel({ entities, annotations, confirmed, onEntityCli
     const suggestions = getSuggestions(entity);
     const verdict = certaintyMap[key];
     if ((suggestions.length > 0 || isUncertain(verdict)) && !confirmed.has(key)) {
-      entitiesWithIssues.push({ entity, key, suggestions });
+      entitiesWithIssues.push({ entity, key, suggestions, category: getAttentionCategory(verdict, suggestions) });
     }
   });
 
@@ -40,9 +68,12 @@ export function SuggestionsPanel({ entities, annotations, confirmed, onEntityCli
 
   const reviewedCount = confirmed.size;
   const totalCount = entities.length;
-  const uncertainCount = entities.filter(e => isUncertain(certaintyMap[getEntityKey(e)])).length;
-  const lowMatchCount = entities.filter(e => getMatchScoreLevel(e.candidates[0]?.score ?? 0) === 'low').length;
   const notLinkedCount = Object.values(annotations).filter(a => a === NOT_LINKED).length;
+
+  const categoryCounts: Partial<Record<AttentionCategory, number>> = {};
+  entitiesWithIssues.forEach(({ category }) => {
+    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+  });
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -60,8 +91,17 @@ export function SuggestionsPanel({ entities, annotations, confirmed, onEntityCli
       {isExpanded && (
         <>
           <div className="px-4 pb-3 flex flex-wrap gap-2">
-            {uncertainCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200"><AlertTriangle className="w-3 h-3" />{uncertainCount} uncertain</span>}
-            {lowMatchCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200"><AlertCircle className="w-3 h-3" />{lowMatchCount} low match</span>}
+            {categoryOrder.map(cat => {
+              const count = categoryCounts[cat];
+              if (!count) return null;
+              const s = categoryBadge[cat];
+              return (
+                <span key={cat} className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${s.bg} ${s.text} border ${s.border}`}>
+                  <AttentionIcon category={cat} className="w-3 h-3" />
+                  {count} {s.label}
+                </span>
+              );
+            })}
             {notLinkedCount > 0 && <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">{notLinkedCount} not linked</span>}
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="w-3 h-3" />{reviewedCount}/{totalCount} reviewed</span>
           </div>
@@ -75,18 +115,18 @@ export function SuggestionsPanel({ entities, annotations, confirmed, onEntityCli
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
-                {entitiesWithIssues.map(({ entity, key, suggestions }) => (
+                {entitiesWithIssues.map(({ entity, key, suggestions, category }) => (
                   <button key={key} onClick={() => onEntityClick(key)} className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-0.5">
-                        {suggestions[0] ? <SuggestionIcon type={suggestions[0].type} /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                        <AttentionIcon category={category} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-slate-800 text-sm truncate">"{entity.mention}"</span>
-                          <span className="text-xs text-slate-400">{(entity.candidates[0]?.score * 100).toFixed(1)}%</span>
+                          <span className="text-xs text-slate-400">{((entity.candidates[0]?.score ?? 0) * 100).toFixed(1)}%</span>
                         </div>
-                        {suggestions[0] && <p className="text-xs text-slate-500 mt-0.5">{suggestions[0].message}</p>}
+                        <p className="text-xs text-slate-500 mt-0.5">{suggestions[0]?.message ?? fallbackMessages[category]}</p>
                       </div>
                     </div>
                   </button>

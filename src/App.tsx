@@ -696,12 +696,12 @@ function AppContent() {
                 <ProgressBar reviewed={reviewedCount} total={totalCount} />
                 <div className="h-6 w-px bg-slate-200" />
                 <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-300" />Confident</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-300" />Likely</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-rose-100 border border-rose-300" />Uncertain</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-violet-100 border border-violet-300" />No match</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-slate-100 border border-slate-300" />Pending</span>
-                  <span className="flex items-center gap-1"><Check className="w-2.5 h-2.5 text-emerald-600" />Confirmed</span>
+                  <span className="flex items-center gap-1 cursor-help" title="Top choice is correct"><span className="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-300" />Confident</span>
+                  <span className="flex items-center gap-1 cursor-help" title="Top choice is probably correct"><span className="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-300" />Likely</span>
+                  <span className="flex items-center gap-1 cursor-help" title="Ambiguous or insufficient context"><span className="w-2.5 h-2.5 rounded bg-rose-100 border border-rose-300" />Uncertain</span>
+                  <span className="flex items-center gap-1 cursor-help" title="No candidate is correct"><span className="w-2.5 h-2.5 rounded bg-violet-100 border border-violet-300" />No match</span>
+                  <span className="flex items-center gap-1 cursor-help" title="Not yet analyzed by LLM"><span className="w-2.5 h-2.5 rounded bg-slate-100 border border-slate-300" />Pending</span>
+                  <span className="flex items-center gap-1 cursor-help" title="Manually reviewed"><Check className="w-2.5 h-2.5 text-emerald-600" />Confirmed</span>
                 </div>
               </div>
 
