@@ -165,7 +165,7 @@ export class CustomBackendResolver implements EntityResolver {
     const extractResponse = await this.trackedFetch('POST', '/api/v1/extract', {
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ text, top_k: topK }),
-    }, 'Step 1/2: NER');
+    }, 'Step 1/2: Extracting clinical entities (NER) + candidate retrieval');
 
     if (!extractResponse.ok) {
       if (extractResponse.status === 503) throw new Error('Backend is starting up. Please wait for models to load.');
@@ -207,7 +207,7 @@ export class CustomBackendResolver implements EntityResolver {
       const linkingResponse = await this.trackedFetch('POST', '/api/v1/linking', {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(linkingPayload),
-      }, 'Step 2/2: Linking');
+      }, 'Step 2/2: Entity linking — disambiguating to SNOMED CT');
 
       if (linkingResponse.ok) {
         const linkingData: ApiLinkingResponse = await linkingResponse.json();

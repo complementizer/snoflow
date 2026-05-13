@@ -3,9 +3,19 @@ import { SnowstormClient } from '../services/snowstorm';
 import { LLMProvider } from '../services/llm/types';
 import { EntityResolver, ExtractOptions, HealthStatus, ResolverCapabilities } from './types';
 
+export interface SnowstormProgressEvent {
+  step: string;
+  detail: string;
+  status: 'pending' | 'done' | 'error';
+  durationMs?: number;
+}
+
+type ProgressListener = (event: SnowstormProgressEvent) => void;
+
 export class SnowstormResolver implements EntityResolver {
   private llm: LLMProvider;
   private snowstorm: SnowstormClient;
+  private listeners: ProgressListener[] = [];
 
   capabilities: ResolverCapabilities = {
     supportsHierarchy: true,
@@ -20,13 +30,30 @@ export class SnowstormResolver implements EntityResolver {
     this.snowstorm = snowstorm;
   }
 
+  onProgress(listener: ProgressListener): () => void {
+    this.listeners.push(listener);
+    return () => { this.listeners = this.listeners.filter(l => l !== listener); };
+  }
+
+  private notify(event: SnowstormProgressEvent) {
+    this.listeners.forEach(l => l(event));
+  }
+
   async extractAndLink(text: string, options: ExtractOptions = {}): Promise<EntityLinkingResponse> {
     const startTime = performance.now();
     const topK = options.topK || 5;
     const threshold = options.threshold || 0;
 
-    const spans = await this.llm.extractEntities(text);
+    const nerStep = 'Step 1/2: Extracting clinical entities (NER)';
+    const candidateStep = 'Step 2/2: Retrieving SNOMED CT candidate concepts';
 
+    this.notify({ step: nerStep, detail: 'via LLM', status: 'pending' });
+    const nerStart = performance.now();
+    const spans = await this.llm.extractEntities(text);
+    this.notify({ step: nerStep, detail: 'via LLM', status: 'done', durationMs: performance.now() - nerStart });
+
+    this.notify({ step: candidateStep, detail: `via Snowstorm (${spans.length} entities)`, status: 'pending' });
+    const candidateStart = performance.now();
     const entities = await Promise.all(
       spans.map(async span => {
         const candidates = await this.snowstorm.searchDescriptions(span.mention, { limit: topK + 5 });
@@ -45,6 +72,7 @@ export class SnowstormResolver implements EntityResolver {
         };
       })
     );
+    this.notify({ step: candidateStep, detail: `via Snowstorm (${spans.length} entities)`, status: 'done', durationMs: performance.now() - candidateStart });
 
     return {
       text,

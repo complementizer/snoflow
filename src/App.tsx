@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { LinkedEntity, EntityLinkingResponse, HierarchyResponse, AnalysisResult, ChatMessage, ExplanationVerdict, NONE_MATCH } from './types';
 import { AppConfig, loadConfig, saveConfig, needsLLM } from './config';
 import { EntityResolver, ServiceHealth } from './resolvers/types';
-import { SnowstormResolver } from './resolvers/snowstormResolver';
+import { SnowstormResolver, SnowstormProgressEvent } from './resolvers/snowstormResolver';
 import { CustomBackendResolver } from './resolvers/customBackendResolver';
 import { EntityText } from './components/EntityText';
 import { SettingsBar } from './components/SettingsBar';
@@ -78,7 +78,7 @@ function BackendStepsDisplay({ steps }: { steps: BackendStep[] }) {
           <span className={s.status === 'pending' ? 'text-slate-700 font-medium' : 'text-slate-500'}>
             {s.step}
           </span>
-          <code className="text-xs text-slate-400">{s.method} {s.endpoint}</code>
+          <code className="text-xs text-slate-400">{s.method ? `${s.method} ${s.endpoint}` : s.endpoint}</code>
           {s.durationMs != null && <span className="text-xs text-slate-400">({s.durationMs.toFixed(0)}ms)</span>}
         </div>
       ))}
@@ -92,7 +92,7 @@ function BackendActivityIndicator({ steps }: { steps: BackendStep[] }) {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-lg animate-pulse">
       <Server className="w-3.5 h-3.5" />
-      <span>{active.step}: {active.method} {active.endpoint}</span>
+      <span>{active.step}{active.method ? `: ${active.method} ${active.endpoint}` : ''}</span>
       <Loader2 className="w-3 h-3 animate-spin" />
     </div>
   );
@@ -110,24 +110,38 @@ function AppContent() {
   const [backendSteps, setBackendSteps] = useState<BackendStep[]>([]);
 
   useEffect(() => {
+    const updateSteps = (entry: BackendStep) => {
+      setBackendSteps(prev => {
+        const existing = prev.findIndex(s => s.step === entry.step);
+        if (existing >= 0) {
+          const next = [...prev];
+          next[existing] = entry;
+          return next;
+        }
+        return [...prev, entry];
+      });
+    };
+
     if (resolver instanceof CustomBackendResolver) {
       return resolver.onRequest((event: BackendRequestEvent) => {
         const stepLabel = event.step || `${event.method} ${event.endpoint}`;
-        setBackendSteps(prev => {
-          const existing = prev.findIndex(s => s.step === stepLabel);
-          const entry: BackendStep = {
-            step: stepLabel,
-            method: event.method,
-            endpoint: event.endpoint,
-            status: event.status,
-            durationMs: event.durationMs,
-          };
-          if (existing >= 0) {
-            const next = [...prev];
-            next[existing] = entry;
-            return next;
-          }
-          return [...prev, entry];
+        updateSteps({
+          step: stepLabel,
+          method: event.method,
+          endpoint: event.endpoint,
+          status: event.status,
+          durationMs: event.durationMs,
+        });
+      });
+    }
+    if (resolver instanceof SnowstormResolver) {
+      return resolver.onProgress((event: SnowstormProgressEvent) => {
+        updateSteps({
+          step: event.step,
+          method: '',
+          endpoint: event.detail,
+          status: event.status,
+          durationMs: event.durationMs,
         });
       });
     }
@@ -564,7 +578,7 @@ function AppContent() {
                 <LLMSettingsButton />
               </div>
             )}
-            {isCustomBackend && (
+            {backendSteps.some(s => s.status === 'pending') && (
               <div className="pl-3 border-l border-slate-200">
                 <BackendActivityIndicator steps={backendSteps} />
               </div>
@@ -641,7 +655,7 @@ function AppContent() {
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 {isLoading ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" />Processing...</>
+                  <><Loader2 className="w-5 h-5 animate-spin" />Running NLP pipeline...</>
                 ) : (
                   <><Search className="w-5 h-5" />Extract Entities</>
                 )}
@@ -663,18 +677,18 @@ function AppContent() {
             <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
             <h3 className="text-lg font-medium text-slate-700 mb-2">
               {analyzeStep
-                ? `Analyzing entities... (${analyzeStep.current}/${analyzeStep.total})`
-                : isCustomBackend ? 'Processing via backend...' : 'Extracting entities...'}
+                ? `Analyzing entities via LLM... (${analyzeStep.current}/${analyzeStep.total})`
+                : 'Running clinical NLP pipeline...'}
             </h3>
-            {isCustomBackend && backendSteps.length > 0 ? (
+            {backendSteps.length > 0 ? (
               <div className="mt-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-w-[320px]">
                 <BackendStepsDisplay steps={backendSteps} />
               </div>
             ) : (
               <p className="text-sm text-slate-500 text-center max-w-md">
                 {analyzeStep
-                  ? 'Running LLM analysis on each entity to determine certainty.'
-                  : 'Identifying medical terms and linking them to SNOMED CT concepts.'}
+                  ? 'Disambiguating each entity mention against SNOMED CT candidate concepts.'
+                  : 'Extracting clinical entities, retrieving candidates, and linking to SNOMED CT.'}
               </p>
             )}
           </div>
