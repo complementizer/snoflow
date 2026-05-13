@@ -325,6 +325,14 @@ export function MentionPanel({
           e.preventDefault();
           onDelete();
           break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (hasPrevious) onPrevious();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (hasNext) onNext();
+          break;
         case 'Tab':
           e.preventDefault();
           if (e.shiftKey) { if (hasPrevious) onPrevious(); }
@@ -383,10 +391,10 @@ export function MentionPanel({
             {entity.verdict && <VerdictBadge verdict={entity.verdict} />}
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={onPrevious} disabled={!hasPrevious} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors" title="Previous (Shift+Tab)">
+            <button onClick={onPrevious} disabled={!hasPrevious} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors" title="Previous (←/Shift+Tab)">
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <button onClick={onNext} disabled={!hasNext} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors" title="Next (Tab)">
+            <button onClick={onNext} disabled={!hasNext} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors" title="Next (→/Tab)">
               <ArrowRight className="w-4 h-4" />
             </button>
             <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors ml-2" title="Close (Esc)">
@@ -656,7 +664,7 @@ export function MentionPanel({
         {supportsHierarchy && <span><kbd className="px-1 bg-white rounded border">h</kbd> hierarchy</span>}
         <span><kbd className="px-1 bg-white rounded border">n</kbd> remove</span>
         <span><kbd className="px-1 bg-white rounded border">Esc</kbd> deselect</span>
-        <span><kbd className="px-1 bg-white rounded border">Tab</kbd> next mention</span>
+        <span><kbd className="px-1 bg-white rounded border">←→</kbd> prev/next mention</span>
       </div>
     </div>
   );

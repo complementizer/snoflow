@@ -153,6 +153,7 @@ All optional. The frontend setup wizard can configure LLM credentials at runtime
 | `1`-`5` | Quick-select by rank |
 | `h` | View hierarchy |
 | `n` | Mark as not a medical concept |
+| `←`/`→` | Previous/next entity |
 | `Tab`/`Shift+Tab` | Next/previous entity |
 | `Esc` | Close panel |
 
