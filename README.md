@@ -6,6 +6,8 @@
 
 Annotate clinical text with SNOMED CT concepts. An LLM extracts medical entities, [Snowstorm](https://browser.ihtsdotools.org/) finds matching concepts, and a human reviews the results.
 
+<img src="public/snoflow-ui-screenshot.png" alt="SNOFlow UI" width="800" />
+
 ## Quick start
 
 ### Frontend only (browser-side LLM calls)
