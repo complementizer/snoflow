@@ -14,6 +14,10 @@ class AnthropicClient(LLMClient):
         self._client = anthropic.AsyncAnthropic(api_key=api_key)
         self._model = model
 
+    @property
+    def model_name(self) -> str:
+        return self._model
+
     async def complete(
         self,
         system_prompt: str,

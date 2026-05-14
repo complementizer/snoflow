@@ -35,7 +35,7 @@ export function LLMExplanationPanel({ entity, noteText, entityKey, onSelectConce
   const isViaBackend = !!onAnalyze;
 
   const modelName = isViaBackend
-    ? (backendLlmModel || null)
+    ? (entity.modelName || cachedAnalysis?.modelName || backendLlmModel || null)
     : settings.provider === 'openai'
     ? settings.openaiModel
     : settings.azureDeployment || null;
@@ -84,10 +84,9 @@ export function LLMExplanationPanel({ entity, noteText, entityKey, onSelectConce
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-indigo-500" />
             <span className="font-medium text-slate-800 text-sm">Verdict</span>
-            {modelName && <span className="text-[10px] font-mono text-slate-400">{modelName}</span>}
             {isViaBackend && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded">
-                <Server className="w-2.5 h-2.5" />backend
+                <Server className="w-2.5 h-2.5" />{modelName || 'backend'}
               </span>
             )}
           </div>
@@ -127,11 +126,9 @@ export function LLMExplanationPanel({ entity, noteText, entityKey, onSelectConce
           <Sparkles className="w-4 h-4 text-indigo-500" />
           <span className="font-medium text-slate-800 text-sm">Verdict</span>
           {!isLoading && explanation && !('error' in explanation && explanation.error) && <VerdictBadge verdict={explanation.verdict} />}
-          {modelName && <span className="text-[10px] font-mono text-slate-400">{modelName}</span>}
-          {isFromBackend && <span className="text-[10px] text-slate-400 uppercase tracking-wide">Backend</span>}
-          {isViaBackend && !isFromBackend && (
+          {(isFromBackend || isViaBackend) && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded">
-              <Server className="w-2.5 h-2.5" />backend
+              <Server className="w-2.5 h-2.5" />{modelName || 'backend'}
             </span>
           )}
         </div>

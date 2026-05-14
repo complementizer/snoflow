@@ -46,6 +46,7 @@ interface ApiLinkingResponse {
   entities: ApiLinkedEntity[];
   text: string;
   processing_time_ms: number;
+  model_name?: string;
 }
 
 interface ApiHierarchyResponse {
@@ -75,7 +76,7 @@ function mapConceptInfo(c: { concept_id: string; term: string; fsn: string }): C
   return { conceptId: c.concept_id, term: c.term, fsn: c.fsn };
 }
 
-function mapLinkedEntity(e: ApiLinkedEntity): LinkedEntity {
+function mapLinkedEntity(e: ApiLinkedEntity, modelName?: string): LinkedEntity {
   const mapped: LinkedEntity = {
     mention: e.mention,
     entityType: e.entity_type,
@@ -92,6 +93,7 @@ function mapLinkedEntity(e: ApiLinkedEntity): LinkedEntity {
       reason: a.reason,
     })),
     linkedViaBackend: true,
+    modelName,
   };
   console.log(`[snoflow] Linked entity "${e.mention}":`, {
     explanation: mapped.explanation,
@@ -213,7 +215,7 @@ export class CustomBackendResolver implements EntityResolver {
         const linkingData: ApiLinkingResponse = await linkingResponse.json();
         return {
           text: linkingData.text,
-          entities: linkingData.entities.map(mapLinkedEntity),
+          entities: linkingData.entities.map(e => mapLinkedEntity(e, linkingData.model_name)),
           processingTimeMs: performance.now() - startTime,
         };
       } else {
@@ -376,6 +378,7 @@ export class CustomBackendResolver implements EntityResolver {
         conceptId: a.concept_id,
         reason: a.reason,
       })),
+      modelName: data.model_name,
     };
   }
 }

@@ -132,8 +132,11 @@ async def link_entities(request: LinkingRequest) -> LinkingResponse:
         ]
     )
 
+    llm = get_llm()
+
     return LinkingResponse(
         entities=list(results),
         text=request.text,
         processing_time_ms=(time.perf_counter() - start) * 1000,
+        model_name=llm.model_name,
     )

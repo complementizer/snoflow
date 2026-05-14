@@ -24,6 +24,10 @@ class AzureOpenAIClient(LLMClient):
         )
         self._deployment = deployment_name
 
+    @property
+    def model_name(self) -> str:
+        return self._deployment
+
     async def complete(
         self,
         system_prompt: str,

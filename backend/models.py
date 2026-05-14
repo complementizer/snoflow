@@ -95,6 +95,7 @@ class LinkingResponse(BaseModel):
     entities: List[RerankedEntity]
     text: str
     processing_time_ms: float
+    model_name: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

@@ -26,6 +26,7 @@ export interface LinkedEntity {
   alternativeConsiderations?: AlternativeConsideration[];
   linkingError?: string;
   linkedViaBackend?: boolean;
+  modelName?: string;
 }
 
 export interface EntityLinkingResponse {
@@ -165,6 +166,7 @@ export interface LLMExplanation {
 
 export interface AnalysisResult extends LLMExplanation {
   error?: string;
+  modelName?: string;
 }
 
 // ---------------------------------------------------------------------------

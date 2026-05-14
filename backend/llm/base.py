@@ -6,6 +6,10 @@ from typing import Any
 
 class LLMClient(ABC):
 
+    @property
+    @abstractmethod
+    def model_name(self) -> str: ...
+
     @abstractmethod
     async def complete(
         self,
